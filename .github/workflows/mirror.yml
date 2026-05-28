@@ -1,0 +1,28 @@
+name: Mirror to secondary remotes
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["**"]
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push to second GitHub
+        env:
+          PAT: ${{ secrets.GITHUB_PAT_ZANMAKER }}
+        run: |
+          git remote add github2 "https://zan-maker:${PAT}@github.com/zan-maker/inventory-control.git"
+          git push --mirror github2
+
+      - name: Push to Codeberg
+        env:
+          PAT: ${{ secrets.CODEBERG_PAT }}
+        run: |
+          git remote add codeberg "https://ShyamDesigan:${PAT}@codeberg.org/ShyamDesigan/inventory-control.git"
+          git push --mirror codeberg
