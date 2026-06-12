@@ -105,8 +105,8 @@ This project is mirrored across three remotes:
 
 | Remote        | URL                                                  |
 | ------------- | ---------------------------------------------------- |
-| `origin`      | `https://github.com/Cubiczan/inventory-control.git`  |
-| `github2`     | `https://github.com/zan-maker/inventory-control.git` |
+| `origin`      | `https://github.com/icohangar-ops/inventory-control.git`  |
+| `github2`     | `https://github.com/icohangar-ops/inventory-control.git` |
 | `codeberg`    | `https://codeberg.org/ShyamDesigan/inventory-control.git` |
 
 Push to all three at once:

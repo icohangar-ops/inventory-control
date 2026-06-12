@@ -4,8 +4,8 @@ This repo is mirrored to three remotes so it survives any single provider outage
 
 | Remote     | Host       | URL                                                       |
 | ---------- | ---------- | --------------------------------------------------------- |
-| `origin`   | GitHub     | `https://github.com/Cubiczan/inventory-control.git`       |
-| `github2`  | GitHub     | `https://github.com/zan-maker/inventory-control.git`      |
+| `origin`   | GitHub     | `https://github.com/icohangar-ops/inventory-control.git`       |
+| `github2`  | GitHub     | `https://github.com/icohangar-ops/inventory-control.git`      |
 | `codeberg` | Codeberg   | `https://codeberg.org/ShyamDesigan/inventory-control.git` |
 
 ## One-time setup
