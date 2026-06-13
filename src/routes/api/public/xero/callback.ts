@@ -1,5 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { safeFetch, ResilienceError } from "@/lib/resilience";
+
+// External HTTP calls get a 15s per-attempt timeout (AbortSignal). On the
+// non-idempotent token exchange we do a single attempt (timeout only, no retry)
+// because the auth code is single-use; the idempotent connections GET may retry.
+const XERO_TIMEOUT_MS = 15_000;
 
 export const Route = createFileRoute("/api/public/xero/callback")({
   server: {
@@ -29,19 +35,28 @@ export const Route = createFileRoute("/api/public/xero/callback")({
         const redirectUri = `${publicOrigin}/api/public/xero/callback`;
         const basic = btoa(`${clientId}:${clientSecret}`);
 
-        // Exchange code for tokens
-        const tokenRes = await fetch("https://identity.xero.com/connect/token", {
-          method: "POST",
-          headers: {
-            Authorization: `Basic ${basic}`,
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: new URLSearchParams({
-            grant_type: "authorization_code",
-            code,
-            redirect_uri: redirectUri,
-          }),
-        });
+        // Exchange code for tokens. Single attempt (no retry) since the auth
+        // code is single-use; the 15s timeout still guards against a hang.
+        let tokenRes: Response;
+        try {
+          tokenRes = await safeFetch("https://identity.xero.com/connect/token", {
+            method: "POST",
+            timeoutMs: XERO_TIMEOUT_MS,
+            maxAttempts: 1,
+            headers: {
+              Authorization: `Basic ${basic}`,
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams({
+              grant_type: "authorization_code",
+              code,
+              redirect_uri: redirectUri,
+            }),
+          });
+        } catch (e) {
+          const reason = e instanceof ResilienceError ? `${e.kind}: ${e.message}` : String(e);
+          return htmlResult(`Token exchange failed: ${reason}`, false);
+        }
         if (!tokenRes.ok) {
           const t = await tokenRes.text();
           return htmlResult(`Token exchange failed: ${t}`, false);
@@ -52,10 +67,17 @@ export const Route = createFileRoute("/api/public/xero/callback")({
           expires_in: number;
         };
 
-        // Fetch tenant connections
-        const connRes = await fetch("https://api.xero.com/connections", {
-          headers: { Authorization: `Bearer ${tokens.access_token}` },
-        });
+        // Fetch tenant connections (idempotent GET — retry + 15s timeout).
+        let connRes: Response;
+        try {
+          connRes = await safeFetch("https://api.xero.com/connections", {
+            timeoutMs: XERO_TIMEOUT_MS,
+            headers: { Authorization: `Bearer ${tokens.access_token}` },
+          });
+        } catch (e) {
+          const reason = e instanceof ResilienceError ? `${e.kind}: ${e.message}` : String(e);
+          return htmlResult(`Fetching Xero connections failed: ${reason}`, false);
+        }
         const connections = (await connRes.json()) as Array<{ tenantId: string; tenantName: string }>;
         const tenant = connections[0];
         if (!tenant) return htmlResult("No Xero tenant authorized", false);

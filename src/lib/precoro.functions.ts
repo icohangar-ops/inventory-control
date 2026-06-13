@@ -2,8 +2,14 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Json } from "@/integrations/supabase/types";
+import { safeFetch, ResilienceError } from "@/lib/resilience";
 
 const PRECORO_BASES = ["https://api.precoro.com", "https://api.precoro.us"];
+
+// External HTTP calls get a 15s per-attempt timeout (AbortSignal) plus
+// retry/backoff on transient 5xx/429/network failures. In Cloudflare Workers
+// this prevents a hung upstream from holding the request slot open.
+const PRECORO_FETCH_OPTS = { timeoutMs: 15_000 } as const;
 
 interface PrecoroPO {
   id: number | string;
@@ -50,9 +56,17 @@ async function precoroFetch(
   let res: Response | null = null;
   let lastError = "";
   for (const base of bases) {
-    res = await fetch(`${base}${path}`, {
-      headers: { "X-AUTH-TOKEN": token, email, Accept: "application/json" },
-    });
+    try {
+      res = await safeFetch(`${base}${path}`, {
+        ...PRECORO_FETCH_OPTS,
+        headers: { "X-AUTH-TOKEN": token, email, Accept: "application/json" },
+      });
+    } catch (e) {
+      // Timeout / network / retryable-status exhaustion. Try the next base.
+      res = null;
+      lastError = e instanceof ResilienceError ? `${e.kind}: ${e.message}` : String(e);
+      continue;
+    }
     if (res.ok) break;
     lastError = (await res.text()).slice(0, 200);
     if (res.status !== 401 && res.status !== 403 && res.status !== 404) break;
@@ -152,9 +166,17 @@ export const syncPrecoroPOs = createServerFn({ method: "POST" })
     let res: Response | null = null;
     let lastError = "";
     for (const base of bases) {
-      res = await fetch(`${base}/purchaseorders?limit=100`, {
-        headers: { "X-AUTH-TOKEN": token, email: precoroEmail, Accept: "application/json" },
-      });
+      try {
+        res = await safeFetch(`${base}/purchaseorders?limit=100`, {
+          ...PRECORO_FETCH_OPTS,
+          headers: { "X-AUTH-TOKEN": token, email: precoroEmail, Accept: "application/json" },
+        });
+      } catch (e) {
+        // Timeout / network / retryable-status exhaustion. Try the next base.
+        res = null;
+        lastError = e instanceof ResilienceError ? `${e.kind}: ${e.message}` : String(e);
+        continue;
+      }
       if (res.ok) break;
       lastError = (await res.text()).slice(0, 200);
       if (res.status !== 401 && res.status !== 403 && res.status !== 404) break;
