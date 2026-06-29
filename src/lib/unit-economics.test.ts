@@ -23,11 +23,24 @@ import {
   reagentRunwayDays,
   batchChemicalCost,
 } from "./unit-economics.ts";
+import {
+  perCrewMonthly,
+  crewLaborMonthly,
+  totalLaborMonthly,
+  annualLaborCost,
+  laborCostPerMt,
+  raiseCostMonthly,
+  conversionCostPerMt,
+} from "./unit-economics.ts";
 import { getReagent, ATOKA_THROUGHPUT_MT_PER_YEAR } from "./atoka-chemicals.ts";
+import { getCrewModel } from "./atoka-labor.ts";
 
 const naoh = getReagent("naoh");
 const h2so4 = getReagent("h2so4");
 const na2co3 = getReagent("na2co3");
+
+const twoCrew = getCrewModel("2-crew");
+const fourCrew = getCrewModel("4-crew");
 
 // ---------------------------------------------------------------------------
 // scaleFactor  (bulk procurement discount anchors)
@@ -247,4 +260,68 @@ test("round2: rounds to 2 decimals", () => {
 
 test("throughput constant matches the memo basis (6,539 MT/yr)", () => {
   assert.equal(ATOKA_THROUGHPUT_MT_PER_YEAR, 6539);
+});
+
+// ---------------------------------------------------------------------------
+// labor economics (reconciles to the Shift Cost Breakdown)
+// ---------------------------------------------------------------------------
+
+test("perCrewMonthly: 2-crew current = $13,450 (2x3600 + 6250)", () => {
+  assert.equal(perCrewMonthly(twoCrew), 13450);
+});
+
+test("perCrewMonthly: 4-crew current = $11,290 (2x2520 + 6250)", () => {
+  assert.equal(perCrewMonthly(fourCrew), 11290);
+});
+
+test("perCrewMonthly: post-raise is $15,416 for either model (2x4583 + 6250)", () => {
+  assert.equal(perCrewMonthly(twoCrew, true), 15416);
+  assert.equal(perCrewMonthly(fourCrew, true), 15416);
+});
+
+test("crewLaborMonthly: 2-crew whole GLMC = $26,900; 4-crew = $45,160", () => {
+  assert.equal(crewLaborMonthly(twoCrew), 26900);
+  assert.equal(crewLaborMonthly(fourCrew), 45160);
+});
+
+test("crewLaborMonthly: post-raise 2-crew = $30,832; 4-crew = $61,664", () => {
+  assert.equal(crewLaborMonthly(twoCrew, true), 30832);
+  assert.equal(crewLaborMonthly(fourCrew, true), 61664);
+});
+
+test("raiseCostMonthly: 2-crew raise costs +$3,932/mo; 4-crew +$16,504/mo", () => {
+  assert.equal(raiseCostMonthly(twoCrew), 3932);
+  assert.equal(raiseCostMonthly(fourCrew), 16504);
+});
+
+test("totalLaborMonthly: adds $3,600 maintenance by default", () => {
+  // 2-crew: 26,900 + 3,600 = 30,500
+  assert.equal(totalLaborMonthly(twoCrew), 30500);
+  // maintenance can be excluded
+  assert.equal(totalLaborMonthly(twoCrew, { includeMaintenance: false }), 26900);
+});
+
+test("annualLaborCost: 2-crew current = $366,000/yr (30,500 x 12)", () => {
+  assert.equal(annualLaborCost(twoCrew), 366000);
+});
+
+test("laborCostPerMt: 2-crew current ≈ $56/MT at 6,539 MT/yr", () => {
+  const perMt = laborCostPerMt(twoCrew);
+  // 366,000 / 6,539 = 55.97
+  assert.ok(perMt > 55 && perMt < 57, `got ${perMt}`);
+});
+
+test("laborCostPerMt: 4-crew costs more per MT than 2-crew at equal throughput", () => {
+  assert.ok(laborCostPerMt(fourCrew) > laborCostPerMt(twoCrew));
+});
+
+test("laborCostPerMt: zero throughput is Infinity, not a divide-by-zero", () => {
+  assert.equal(laborCostPerMt(twoCrew, 0), Infinity);
+});
+
+test("conversionCostPerMt: chemical + labor, excludes feedstock", () => {
+  const conv = conversionCostPerMt(4, twoCrew);
+  assert.equal(conv, chemicalCostPerMt(4) + laborCostPerMt(twoCrew));
+  // chemical (~640) + labor (~56) ≈ ~697/MT, well under the $5,003 all-in
+  assert.ok(conv > 690 && conv < 705, `got ${conv}`);
 });

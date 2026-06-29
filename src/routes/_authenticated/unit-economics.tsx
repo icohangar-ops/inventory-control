@@ -5,6 +5,7 @@ import {
   ATOKA_THROUGHPUT_MT_PER_YEAR,
   type Reagent,
 } from "@/lib/atoka-chemicals";
+import { ATOKA_CREW_MODELS, getCrewModel, type CrewModel } from "@/lib/atoka-labor";
 import {
   round2,
   reagentCostPerMt,
@@ -22,6 +23,12 @@ import {
   railSavingsPerKg,
   railSavingsPerMt,
   totalRailSavingsPerMt,
+  crewLaborMonthly,
+  totalLaborMonthly,
+  annualLaborCost,
+  laborCostPerMt,
+  raiseCostMonthly,
+  conversionCostPerMt,
 } from "@/lib/unit-economics";
 
 export const Route = createFileRoute("/_authenticated/unit-economics")({
@@ -38,9 +45,13 @@ const usdK = (n: number) =>
 const pct = (n: number) => `${(n * 100).toFixed(0)}%`;
 
 function UnitEconomicsPage() {
-  // Operators can flex the two model inputs the memo leaves open.
+  // Operators can flex the model inputs the memos leave open.
   const [units, setUnits] = useState(4);
   const [throughput, setThroughput] = useState(ATOKA_THROUGHPUT_MT_PER_YEAR);
+  const [crewKey, setCrewKey] = useState<CrewModel["key"]>("2-crew");
+  const [raise, setRaise] = useState(false);
+  const crew = getCrewModel(crewKey);
+  const laborOpts = { raise };
 
   const m = useMemo(() => {
     const breakdown = processingCostBreakdown(units, undefined, undefined);
@@ -55,8 +66,15 @@ function UnitEconomicsPage() {
       railPerMt: totalRailSavingsPerMt(units),
       railAnnual: totalRailSavingsPerMt(units) * throughput,
       breakdown,
+      laborMonthly: totalLaborMonthly(crew, laborOpts),
+      crewMonthly: crewLaborMonthly(crew, raise),
+      annualLabor: annualLaborCost(crew, laborOpts),
+      laborPerMt: laborCostPerMt(crew, throughput, laborOpts),
+      raiseDelta: raiseCostMonthly(crew),
+      conversionPerMt: conversionCostPerMt(units, crew, throughput, laborOpts),
     };
-  }, [units, throughput]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [units, throughput, crewKey, raise]);
 
   const scaleRows = useMemo(
     () => reagentScaleSavingsTable(throughput),
@@ -100,6 +118,32 @@ function UnitEconomicsPage() {
             onChange={(e) => setThroughput(Math.max(0, Number(e.target.value)))}
             className="w-36 bg-card border border-border rounded-md px-3 py-1.5 tabular-nums"
           />
+        </label>
+        <label className="text-sm">
+          <span className="block text-xs uppercase tracking-wide text-muted-foreground mb-1">
+            Crew model
+          </span>
+          <select
+            value={crewKey}
+            onChange={(e) => setCrewKey(e.target.value as CrewModel["key"])}
+            className="bg-card border border-border rounded-md px-3 py-1.5"
+          >
+            {ATOKA_CREW_MODELS.map((c) => (
+              <option key={c.key} value={c.key}>
+                {c.label}
+                {c.current ? " · current" : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-sm flex items-end gap-2 pb-1.5">
+          <input
+            type="checkbox"
+            checked={raise}
+            onChange={(e) => setRaise(e.target.checked)}
+            className="h-4 w-4"
+          />
+          <span>Post-raise pay (~$55k/yr floorhands)</span>
         </label>
       </div>
 
@@ -148,6 +192,21 @@ function UnitEconomicsPage() {
             </tr>
           </tbody>
         </table>
+      </div>
+
+      {/* Labor / shift cost -> cost per MT */}
+      <h2 className="mt-8 font-semibold">Labor &amp; conversion cost</h2>
+      <p className="text-xs text-muted-foreground mt-1">
+        From the Shift Cost Breakdown: {crew.label}, {crew.crews} crew
+        {crew.crews > 1 ? "s" : ""} of 1 operator + 2 floorhands, plus
+        maintenance. Conversion cost = chemical + labor (excludes market-driven
+        feedstock).
+      </p>
+      <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Kpi label="Labor cost / MT" value={usd(round2(m.laborPerMt), 0)} sub={`${pct(m.laborPerMt / (m.breakdown.feedstock + m.breakdown.chemical + m.breakdown.other))} of all-in`} />
+        <Kpi label="Total labor / mo" value={usd(m.laborMonthly, 0)} sub={`${usdK(m.annualLabor)}/yr`} />
+        <Kpi label="Conversion cost / MT" value={usd(round2(m.conversionPerMt), 0)} sub="chemical + labor" />
+        <Kpi label="Cost of pay raise" value={`${usd(m.raiseDelta, 0)}/mo`} sub={raise ? "applied" : `+${usdK(m.raiseDelta * 12)}/yr if applied`} />
       </div>
 
       {/* Scale economics + levers */}

@@ -31,6 +31,14 @@ import {
   BULK_SCALE_FACTOR_4_UNITS,
   type Reagent,
 } from "./atoka-chemicals.ts";
+import {
+  FLOORHANDS_PER_CREW,
+  OPERATORS_PER_CREW,
+  OPERATOR_MONTHLY,
+  RAISE_FLOORHAND_MONTHLY,
+  MAINTENANCE_MONTHLY,
+  type CrewModel,
+} from "./atoka-labor.ts";
 
 /** Round to 2 decimals (USD display scale). */
 export function round2(n: number): number {
@@ -245,4 +253,81 @@ export function reagentRunwayDays(
 /** Total reagent (chemical) cost to process a batch of `massMt`, USD. */
 export function batchChemicalCost(massMt: number, units = 4): number {
   return chemicalCostPerMt(units) * massMt;
+}
+
+// ---------------------------------------------------------------------------
+// Labor economics (from the Shift Cost Breakdown)
+// ---------------------------------------------------------------------------
+
+/** Options shared by the labor helpers. */
+export interface LaborOpts {
+  /** Use the post-raise floorhand pay (~$55k/yr) instead of current pay. */
+  raise?: boolean;
+  /** Include the maintenance crew in the total (default true). */
+  includeMaintenance?: boolean;
+}
+
+/** Per-floorhand monthly pay for a model under current or post-raise pay. */
+export function floorhandMonthly(model: CrewModel, raise = false): number {
+  return raise ? RAISE_FLOORHAND_MONTHLY : model.floorhandMonthly;
+}
+
+/** Cost of ONE shift-crew (1 operator + 2 floorhands), USD/month. */
+export function perCrewMonthly(model: CrewModel, raise = false): number {
+  return (
+    FLOORHANDS_PER_CREW * floorhandMonthly(model, raise) +
+    OPERATORS_PER_CREW * OPERATOR_MONTHLY
+  );
+}
+
+/** All shift-crews for a model (excludes maintenance), USD/month. */
+export function crewLaborMonthly(model: CrewModel, raise = false): number {
+  return model.crews * perCrewMonthly(model, raise);
+}
+
+/** Total monthly labor: shift crews + (optional) maintenance, USD/month. */
+export function totalLaborMonthly(
+  model: CrewModel,
+  { raise = false, includeMaintenance = true }: LaborOpts = {},
+): number {
+  return (
+    crewLaborMonthly(model, raise) +
+    (includeMaintenance ? MAINTENANCE_MONTHLY : 0)
+  );
+}
+
+/** Annualized total labor cost, USD/yr. */
+export function annualLaborCost(model: CrewModel, opts: LaborOpts = {}): number {
+  return totalLaborMonthly(model, opts) * 12;
+}
+
+/**
+ * Labor cost per MT of feedstock = annual labor ÷ annual throughput.
+ * This is the slice of the all-in processing cost attributable to people.
+ */
+export function laborCostPerMt(
+  model: CrewModel,
+  throughputMtPerYear: number = ATOKA_THROUGHPUT_MT_PER_YEAR,
+  opts: LaborOpts = {},
+): number {
+  if (throughputMtPerYear <= 0) return Infinity;
+  return annualLaborCost(model, opts) / throughputMtPerYear;
+}
+
+/** Monthly cost delta of moving to post-raise pay for a model, USD/month. */
+export function raiseCostMonthly(model: CrewModel): number {
+  return crewLaborMonthly(model, true) - crewLaborMonthly(model, false);
+}
+
+/**
+ * Conversion cost per MT = chemical + labor (the controllable, in-plant cost
+ * to convert one MT of feedstock — excludes the market-driven feedstock buy).
+ */
+export function conversionCostPerMt(
+  units: number,
+  model: CrewModel,
+  throughputMtPerYear: number = ATOKA_THROUGHPUT_MT_PER_YEAR,
+  opts: LaborOpts = {},
+): number {
+  return chemicalCostPerMt(units) + laborCostPerMt(model, throughputMtPerYear, opts);
 }
