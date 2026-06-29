@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
-  ATOKA_REAGENTS,
-  ATOKA_THROUGHPUT_MT_PER_YEAR,
+  PLANT_REAGENTS,
+  PLANT_THROUGHPUT_MT_PER_YEAR,
   type Reagent,
-} from "@/lib/atoka-chemicals";
-import { ATOKA_CREW_MODELS, getCrewModel, type CrewModel } from "@/lib/atoka-labor";
+} from "@/lib/plant-chemicals";
+import { PLANT_CREW_MODELS, getCrewModel, type CrewModel } from "@/lib/plant-labor";
 import {
   round2,
   reagentCostPerMt,
@@ -47,7 +47,7 @@ const pct = (n: number) => `${(n * 100).toFixed(0)}%`;
 function UnitEconomicsPage() {
   // Operators can flex the model inputs the memos leave open.
   const [units, setUnits] = useState(4);
-  const [throughput, setThroughput] = useState(ATOKA_THROUGHPUT_MT_PER_YEAR);
+  const [throughput, setThroughput] = useState(PLANT_THROUGHPUT_MT_PER_YEAR);
   const [crewKey, setCrewKey] = useState<CrewModel["key"]>("2-crew");
   const [raise, setRaise] = useState(false);
   const crew = getCrewModel(crewKey);
@@ -85,8 +85,8 @@ function UnitEconomicsPage() {
     <div className="p-8 max-w-6xl">
       <h1 className="text-2xl font-semibold tracking-tight">Unit economics</h1>
       <p className="text-sm text-muted-foreground mt-1">
-        Reagent cost to process one MT of black-mass feedstock — Atoka, OK.
-        Source: Chemical Cost Breakdown / Financial Model v5.
+        Reagent cost to process one MT of black-mass feedstock at the
+        manufacturing plant. Source: Chemical Cost Breakdown / Financial Model v5.
       </p>
 
       {/* Inputs */}
@@ -128,7 +128,7 @@ function UnitEconomicsPage() {
             onChange={(e) => setCrewKey(e.target.value as CrewModel["key"])}
             className="bg-card border border-border rounded-md px-3 py-1.5"
           >
-            {ATOKA_CREW_MODELS.map((c) => (
+            {PLANT_CREW_MODELS.map((c) => (
               <option key={c.key} value={c.key}>
                 {c.label}
                 {c.current ? " · current" : ""}
@@ -170,7 +170,7 @@ function UnitEconomicsPage() {
             </tr>
           </thead>
           <tbody>
-            {ATOKA_REAGENTS.map((r: Reagent) => (
+            {PLANT_REAGENTS.map((r: Reagent) => (
               <tr key={r.key} className="border-t border-border">
                 <td className="px-4 py-2.5">
                   {r.name} <span className="text-xs text-muted-foreground">({r.formula})</span>
@@ -242,7 +242,7 @@ function UnitEconomicsPage() {
               title="Truck → rail logistics"
               perMt={`${usd(round2(m.railPerMt), 0)}/MT`}
               annual={`${usdK(m.railAnnual)}/yr`}
-              note={`Largest on NaOH (${usd(round2(railSavingsPerMt(ATOKA_REAGENTS[0], units)), 0)}/MT).`}
+              note={`Largest on NaOH (${usd(round2(railSavingsPerMt(PLANT_REAGENTS[0], units)), 0)}/MT).`}
             />
             <Lever
               title="Feedstock (market-driven)"

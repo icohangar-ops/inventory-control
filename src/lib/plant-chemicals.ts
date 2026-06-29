@@ -1,11 +1,11 @@
 /**
- * Atoka plant chemical / reagent reference data.
+ * Manufacturing plant chemical / reagent reference data.
  *
- * Source of truth: "Chemical Cost Breakdown — Atoka Plant" (GreenCAM America,
+ * Source of truth: "Chemical Cost Breakdown" (GreenCAM America,
  * prepared June 2026), itself derived from the Green Li-ion Financial Model v5
  * (June 2026) "Chemical Cost Build Up" sheet.
  *
- * The Atoka plant consumes process reagents to refine black-mass feedstock into
+ * The manufacturing plant consumes process reagents to refine black-mass feedstock into
  * battery-grade product. Each metric ton (MT) of feedstock processed consumes a
  * fixed bundle of reagents. This module captures the per-reagent pricing and the
  * plant-level cost structure so the unit-economics helpers (see
@@ -30,7 +30,7 @@ export interface Reagent {
   formula: string;
   /** Benchmark FOB price at supplier, USD/kg. */
   fobPricePerKg: number;
-  /** Truck logistics, supplier -> Atoka OK, USD/kg. */
+  /** Truck logistics, supplier -> the plant, USD/kg. */
   truckLogisticsPerKg: number;
   /** All-in delivered price used in the financial model, USD/kg (truck basis). */
   deliveredPricePerKg: number;
@@ -57,19 +57,19 @@ export const BULK_SCALE_FACTOR_4_UNITS = 0.7;
 export const REFERENCE_UNITS_AT_STEADY_STATE = 4;
 
 /** Steady-state feedstock throughput, MT/year (used for annualized figures). */
-export const ATOKA_THROUGHPUT_MT_PER_YEAR = 6539;
+export const PLANT_THROUGHPUT_MT_PER_YEAR = 6539;
 
 /** Feedstock (black mass) purchase cost — the dominant, market-driven cost. */
-export const ATOKA_FEEDSTOCK_COST_PER_MT = 3500;
+export const PLANT_FEEDSTOCK_COST_PER_MT = 3500;
 
 /** All-in processing cost per MT at 4 units (chemical is 13% of this). */
-export const ATOKA_ALL_IN_PROCESSING_COST_PER_MT = 5003;
+export const PLANT_ALL_IN_PROCESSING_COST_PER_MT = 5003;
 
 /**
  * The four process reagents, ordered by share of chemical spend (largest first).
  * baseCostPerMtUsd values are the "1 Unit (FY2026)" column from the breakdown.
  */
-export const ATOKA_REAGENTS: readonly Reagent[] = [
+export const PLANT_REAGENTS: readonly Reagent[] = [
   {
     key: "naoh",
     name: "Caustic soda",
@@ -114,7 +114,7 @@ export const ATOKA_REAGENTS: readonly Reagent[] = [
 
 /** Look up a reagent by key (throws if unknown — keeps callers honest). */
 export function getReagent(key: Reagent["key"]): Reagent {
-  const r = ATOKA_REAGENTS.find((x) => x.key === key);
+  const r = PLANT_REAGENTS.find((x) => x.key === key);
   if (!r) throw new Error(`Unknown reagent: ${key}`);
   return r;
 }

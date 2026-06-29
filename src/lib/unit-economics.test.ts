@@ -32,8 +32,8 @@ import {
   raiseCostMonthly,
   conversionCostPerMt,
 } from "./unit-economics.ts";
-import { getReagent, ATOKA_THROUGHPUT_MT_PER_YEAR } from "./atoka-chemicals.ts";
-import { getCrewModel } from "./atoka-labor.ts";
+import { getReagent, PLANT_THROUGHPUT_MT_PER_YEAR } from "./plant-chemicals.ts";
+import { getCrewModel } from "./plant-labor.ts";
 
 const naoh = getReagent("naoh");
 const h2so4 = getReagent("h2so4");
@@ -259,7 +259,7 @@ test("round2: rounds to 2 decimals", () => {
 });
 
 test("throughput constant matches the memo basis (6,539 MT/yr)", () => {
-  assert.equal(ATOKA_THROUGHPUT_MT_PER_YEAR, 6539);
+  assert.equal(PLANT_THROUGHPUT_MT_PER_YEAR, 6539);
 });
 
 // ---------------------------------------------------------------------------

@@ -1,9 +1,9 @@
 /**
- * Unit-economics calculations for the Atoka recycling plant.
+ * Unit-economics calculations for the manufacturing plant.
  *
- * These are pure functions over the reference data in `atoka-chemicals.ts`.
+ * These are pure functions over the reference data in `plant-chemicals.ts`.
  * They answer the questions the financial model and the "Chemical Cost
- * Breakdown — Atoka Plant" memo answer, but as testable code the inventory app
+ * Breakdown" memo answer, but as testable code the inventory app
  * can reuse:
  *
  *   - What does it cost in reagents to process one MT of feedstock?      (chemicalCostPerMt)
@@ -19,18 +19,18 @@
  * Money semantics match the rest of the app: plain JS numbers, round at the
  * boundary with `round4`/`round2` when displaying.
  *
- * @see ./atoka-chemicals.ts
+ * @see ./plant-chemicals.ts
  * @see ./inventory-math.ts
  */
 
 import {
-  ATOKA_REAGENTS,
-  ATOKA_ALL_IN_PROCESSING_COST_PER_MT,
-  ATOKA_FEEDSTOCK_COST_PER_MT,
-  ATOKA_THROUGHPUT_MT_PER_YEAR,
+  PLANT_REAGENTS,
+  PLANT_ALL_IN_PROCESSING_COST_PER_MT,
+  PLANT_FEEDSTOCK_COST_PER_MT,
+  PLANT_THROUGHPUT_MT_PER_YEAR,
   BULK_SCALE_FACTOR_4_UNITS,
   type Reagent,
-} from "./atoka-chemicals.ts";
+} from "./plant-chemicals.ts";
 import {
   FLOORHANDS_PER_CREW,
   OPERATORS_PER_CREW,
@@ -38,7 +38,7 @@ import {
   RAISE_FLOORHAND_MONTHLY,
   MAINTENANCE_MONTHLY,
   type CrewModel,
-} from "./atoka-labor.ts";
+} from "./plant-labor.ts";
 
 /** Round to 2 decimals (USD display scale). */
 export function round2(n: number): number {
@@ -68,7 +68,7 @@ export function reagentCostPerMt(reagent: Reagent, units: number): number {
 
 /** Total chemical cost to process one MT of feedstock at `units`, USD/MT. */
 export function chemicalCostPerMt(units: number): number {
-  return ATOKA_REAGENTS.reduce((sum, r) => sum + reagentCostPerMt(r, units), 0);
+  return PLANT_REAGENTS.reduce((sum, r) => sum + reagentCostPerMt(r, units), 0);
 }
 
 /**
@@ -84,7 +84,7 @@ export function impliedConsumptionKgPerMt(
 
 /** Total reagent load across all reagents, kg per MT of feedstock. */
 export function totalReagentLoadKgPerMt(units: number): number {
-  return ATOKA_REAGENTS.reduce(
+  return PLANT_REAGENTS.reduce(
     (sum, r) => sum + impliedConsumptionKgPerMt(r, units),
     0,
   );
@@ -109,21 +109,21 @@ export function scaleSavingsPerMt(): number {
 /** Annualized chemical cost at `units`, USD/yr at steady-state throughput. */
 export function annualChemicalCost(
   units: number,
-  throughputMtPerYear: number = ATOKA_THROUGHPUT_MT_PER_YEAR,
+  throughputMtPerYear: number = PLANT_THROUGHPUT_MT_PER_YEAR,
 ): number {
   return chemicalCostPerMt(units) * throughputMtPerYear;
 }
 
 /** Annualized saving from scaling 1 -> 4 units, USD/yr. */
 export function annualScaleSavings(
-  throughputMtPerYear: number = ATOKA_THROUGHPUT_MT_PER_YEAR,
+  throughputMtPerYear: number = PLANT_THROUGHPUT_MT_PER_YEAR,
 ): number {
   return scaleSavingsPerMt() * throughputMtPerYear;
 }
 
 /** Per-reagent scale-savings table (1 unit vs 4 units), with annualized value. */
 export function reagentScaleSavingsTable(
-  throughputMtPerYear: number = ATOKA_THROUGHPUT_MT_PER_YEAR,
+  throughputMtPerYear: number = PLANT_THROUGHPUT_MT_PER_YEAR,
 ): Array<{
   key: Reagent["key"];
   oneUnitPerMt: number;
@@ -131,7 +131,7 @@ export function reagentScaleSavingsTable(
   savingsPerMt: number;
   annualSavings: number;
 }> {
-  return ATOKA_REAGENTS.map((r) => {
+  return PLANT_REAGENTS.map((r) => {
     const one = reagentCostPerMt(r, 1);
     const four = reagentCostPerMt(r, 4);
     const savingsPerMt = one - four;
@@ -155,8 +155,8 @@ export function reagentScaleSavingsTable(
  */
 export function processingCostBreakdown(
   units = 4,
-  allInPerMt: number = ATOKA_ALL_IN_PROCESSING_COST_PER_MT,
-  feedstockPerMt: number = ATOKA_FEEDSTOCK_COST_PER_MT,
+  allInPerMt: number = PLANT_ALL_IN_PROCESSING_COST_PER_MT,
+  feedstockPerMt: number = PLANT_FEEDSTOCK_COST_PER_MT,
 ): {
   feedstock: number;
   chemical: number;
@@ -193,7 +193,7 @@ export function efficiencySavingsPerMt(pct: number, units = 4): number {
 export function annualEfficiencySavings(
   pct: number,
   units = 4,
-  throughputMtPerYear: number = ATOKA_THROUGHPUT_MT_PER_YEAR,
+  throughputMtPerYear: number = PLANT_THROUGHPUT_MT_PER_YEAR,
 ): number {
   return efficiencySavingsPerMt(pct, units) * throughputMtPerYear;
 }
@@ -218,7 +218,7 @@ export function railSavingsPerMt(reagent: Reagent, units = 4): number {
 
 /** Total per-MT saving if ALL reagents switched to rail, USD/MT. */
 export function totalRailSavingsPerMt(units = 4): number {
-  return ATOKA_REAGENTS.reduce((sum, r) => sum + railSavingsPerMt(r, units), 0);
+  return PLANT_REAGENTS.reduce((sum, r) => sum + railSavingsPerMt(r, units), 0);
 }
 
 // ---------------------------------------------------------------------------
@@ -307,7 +307,7 @@ export function annualLaborCost(model: CrewModel, opts: LaborOpts = {}): number 
  */
 export function laborCostPerMt(
   model: CrewModel,
-  throughputMtPerYear: number = ATOKA_THROUGHPUT_MT_PER_YEAR,
+  throughputMtPerYear: number = PLANT_THROUGHPUT_MT_PER_YEAR,
   opts: LaborOpts = {},
 ): number {
   if (throughputMtPerYear <= 0) return Infinity;
@@ -326,7 +326,7 @@ export function raiseCostMonthly(model: CrewModel): number {
 export function conversionCostPerMt(
   units: number,
   model: CrewModel,
-  throughputMtPerYear: number = ATOKA_THROUGHPUT_MT_PER_YEAR,
+  throughputMtPerYear: number = PLANT_THROUGHPUT_MT_PER_YEAR,
   opts: LaborOpts = {},
 ): number {
   return chemicalCostPerMt(units) + laborCostPerMt(model, throughputMtPerYear, opts);

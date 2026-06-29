@@ -1,7 +1,7 @@
 /**
- * Atoka plant labor / shift-cost reference data.
+ * Manufacturing plant labor / shift-cost reference data.
  *
- * Source of truth: "Shift Cost Breakdown — Atoka Plant" (GreenCAM America,
+ * Source of truth: "Shift Cost Breakdown" (GreenCAM America,
  * GLMC-1 Operations, corrected June 2026).
  *
  * The plant runs crews of 1 operator + 2 floorhands per shift. Two operating
@@ -17,7 +17,7 @@
  * All figures are USD/month unless noted.
  *
  * @see ./unit-economics.ts   (laborCostPerMt, conversionCostPerMt, ...)
- * @see ./atoka-chemicals.ts  (chemical side of the same cost stack)
+ * @see ./plant-chemicals.ts  (chemical side of the same cost stack)
  */
 
 /** Floorhands staffed per shift-crew. */
@@ -50,7 +50,7 @@ export interface CrewModel {
  * crews on the same coverage means more hours (and pay) per floorhand:
  *   2-crew floorhand $3,600/mo  vs  4-crew floorhand $2,520/mo.
  */
-export const ATOKA_CREW_MODELS: readonly CrewModel[] = [
+export const PLANT_CREW_MODELS: readonly CrewModel[] = [
   {
     key: "2-crew",
     label: "2-crew (5-day coverage)",
@@ -71,7 +71,7 @@ export const ATOKA_CREW_MODELS: readonly CrewModel[] = [
 
 /** Look up a crew model by key (throws if unknown). */
 export function getCrewModel(key: CrewModel["key"]): CrewModel {
-  const m = ATOKA_CREW_MODELS.find((x) => x.key === key);
+  const m = PLANT_CREW_MODELS.find((x) => x.key === key);
   if (!m) throw new Error(`Unknown crew model: ${key}`);
   return m;
 }
