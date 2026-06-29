@@ -1,6 +1,6 @@
 import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
-import { LayoutDashboard, Package, MapPin, Warehouse, ArrowLeftRight, FileText, BookOpen, Download, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, Package, MapPin, Warehouse, ArrowLeftRight, FileText, BookOpen, Download, Calculator, Settings, LogOut } from "lucide-react";
 
 const nav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -10,6 +10,7 @@ const nav = [
   { to: "/movements", label: "Movements", icon: ArrowLeftRight },
   { to: "/purchase-orders", label: "Purchase orders", icon: FileText },
   { to: "/journals", label: "Journals", icon: BookOpen },
+  { to: "/unit-economics", label: "Unit economics", icon: Calculator },
   { to: "/exports", label: "Exports", icon: Download },
   { to: "/settings", label: "Settings", icon: Settings },
 ];

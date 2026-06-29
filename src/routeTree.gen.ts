@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedUnitEconomicsRouteImport } from './routes/_authenticated/unit-economics'
 import { Route as AuthenticatedStockRouteImport } from './routes/_authenticated/stock'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedPurchaseOrdersRouteImport } from './routes/_authenticated/purchase-orders'
@@ -38,6 +39,12 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedUnitEconomicsRoute =
+  AuthenticatedUnitEconomicsRouteImport.update({
+    id: '/unit-economics',
+    path: '/unit-economics',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedStockRoute = AuthenticatedStockRouteImport.update({
   id: '/stock',
   path: '/stock',
@@ -108,6 +115,7 @@ export interface FileRoutesByFullPath {
   '/purchase-orders': typeof AuthenticatedPurchaseOrdersRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
   '/stock': typeof AuthenticatedStockRoute
+  '/unit-economics': typeof AuthenticatedUnitEconomicsRoute
   '/purchase-orders/$poId': typeof AuthenticatedPurchaseOrdersPoIdRoute
   '/api/public/xero/callback': typeof ApiPublicXeroCallbackRoute
 }
@@ -123,6 +131,7 @@ export interface FileRoutesByTo {
   '/purchase-orders': typeof AuthenticatedPurchaseOrdersRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
   '/stock': typeof AuthenticatedStockRoute
+  '/unit-economics': typeof AuthenticatedUnitEconomicsRoute
   '/purchase-orders/$poId': typeof AuthenticatedPurchaseOrdersPoIdRoute
   '/api/public/xero/callback': typeof ApiPublicXeroCallbackRoute
 }
@@ -140,6 +149,7 @@ export interface FileRoutesById {
   '/_authenticated/purchase-orders': typeof AuthenticatedPurchaseOrdersRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/stock': typeof AuthenticatedStockRoute
+  '/_authenticated/unit-economics': typeof AuthenticatedUnitEconomicsRoute
   '/_authenticated/purchase-orders/$poId': typeof AuthenticatedPurchaseOrdersPoIdRoute
   '/api/public/xero/callback': typeof ApiPublicXeroCallbackRoute
 }
@@ -157,6 +167,7 @@ export interface FileRouteTypes {
     | '/purchase-orders'
     | '/settings'
     | '/stock'
+    | '/unit-economics'
     | '/purchase-orders/$poId'
     | '/api/public/xero/callback'
   fileRoutesByTo: FileRoutesByTo
@@ -172,6 +183,7 @@ export interface FileRouteTypes {
     | '/purchase-orders'
     | '/settings'
     | '/stock'
+    | '/unit-economics'
     | '/purchase-orders/$poId'
     | '/api/public/xero/callback'
   id:
@@ -188,6 +200,7 @@ export interface FileRouteTypes {
     | '/_authenticated/purchase-orders'
     | '/_authenticated/settings'
     | '/_authenticated/stock'
+    | '/_authenticated/unit-economics'
     | '/_authenticated/purchase-orders/$poId'
     | '/api/public/xero/callback'
   fileRoutesById: FileRoutesById
@@ -221,6 +234,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/unit-economics': {
+      id: '/_authenticated/unit-economics'
+      path: '/unit-economics'
+      fullPath: '/unit-economics'
+      preLoaderRoute: typeof AuthenticatedUnitEconomicsRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/stock': {
       id: '/_authenticated/stock'
@@ -326,6 +346,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedPurchaseOrdersRoute: typeof AuthenticatedPurchaseOrdersRouteWithChildren
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedStockRoute: typeof AuthenticatedStockRoute
+  AuthenticatedUnitEconomicsRoute: typeof AuthenticatedUnitEconomicsRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -339,6 +360,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
     AuthenticatedPurchaseOrdersRouteWithChildren,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedStockRoute: AuthenticatedStockRoute,
+  AuthenticatedUnitEconomicsRoute: AuthenticatedUnitEconomicsRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

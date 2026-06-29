@@ -19,6 +19,9 @@ Azure Static Web Apps, or any Node-compatible host.
 - **Movements** — append-only stock-movement ledger (receipts, issues, transfers, adjustments)
 - **Purchase orders** — synced from Precoro, receivable line-by-line into stock
 - **Journals** — Xero journal staging (PO receipts, COGS, adjustments)
+- **Unit economics** — reagent cost per MT of feedstock, 1-unit vs 4-unit scale
+  savings, processing-cost breakdown, and improvement levers (efficiency, rail
+  logistics), sourced from the Atoka Chemical Cost Breakdown / Financial Model v5
 - **Exports** — Syft-compatible CSVs (valuation, movements, trial balance feed)
 - **Settings** — OAuth2 to Xero, API token for Precoro, role-based access
 
